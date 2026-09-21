@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07090d">
+  <title>NRE Empire — New Republic Enterprises</title>
+  <meta name="description" content="Official hub of the NRE Empire — New Republic Enterprises, its divisions, network projects, games, and connected organizations.">
+  <style>
+    :root{
+      --bg:#07090d;--bg2:#0b0f15;--panel:#0f151d;--panel2:#131b25;
+      --line:#24303d;--line2:#334253;--text:#f5f2e8;--muted:#9aa7b3;
+      --gold:#d8b45d;--gold2:#f1d98a;--red:#c95757;--blue:#6f95c9;
+      --max:1180px;--r:18px;--shadow:0 28px 70px rgba(0,0,0,.32)
+    }
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{
+      margin:0;color:var(--text);background:
+      radial-gradient(circle at 15% 8%,rgba(216,180,93,.10),transparent 30rem),
+      radial-gradient(circle at 85% 20%,rgba(111,149,201,.07),transparent 32rem),
+      var(--bg);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;overflow-x:hidden
+    }
+    a{color:inherit;text-decoration:none}
+    button{font:inherit}
+    .wrap{width:min(calc(100% - 36px),var(--max));margin:auto}
+    .nav{
+      position:fixed;top:0;left:0;right:0;z-index:20;
+      background:rgba(7,9,13,.78);backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(255,255,255,.06)
+    }
+    .navin{height:76px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{font-weight:900;letter-spacing:.08em;font-size:20px}
+    .brand span{color:var(--gold)}
+    .links{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .links a{padding:9px 11px;border-radius:9px;color:var(--muted);font-size:14px}
+    .links a:hover{background:rgba(255,255,255,.05);color:var(--text)}
+    .menu{display:none;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+    .hero{min-height:100svh;display:flex;align-items:center;padding:125px 0 80px;position:relative}
+    .grid{
+      position:absolute;inset:0;pointer-events:none;opacity:.35;
+      background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+      background-size:64px 64px;mask-image:linear-gradient(to bottom,black,transparent 90%)
+    }
+    .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.18em;color:var(--gold);font-weight:800;margin-bottom:18px}
+    h1,h2,h3{margin:0;line-height:1}
+    h1{font-size:clamp(58px,10vw,132px);letter-spacing:-.055em;max-width:1000px}
+    h1 em{font-style:normal;color:var(--gold)}
+    h2{font-size:clamp(40px,6vw,72px);letter-spacing:-.035em}
+    h3{font-size:25px}
+    .lede{max-width:760px;font-size:clamp(17px,2vw,21px);color:var(--muted);margin-top:24px}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      min-height:48px;padding:0 20px;border:1px solid var(--line);border-radius:11px;
+      background:var(--panel);font-weight:800;transition:.2s ease
+    }
+    .btn:hover{transform:translateY(-2px);border-color:var(--line2)}
+    .btn.primary{background:var(--gold);color:#111;border-color:var(--gold)}
+    .hero-meta{margin-top:50px;display:flex;gap:18px;flex-wrap:wrap;color:#6f7c88;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+    section{padding:100px 0;scroll-margin-top:85px}
+    .section-head{display:grid;grid-template-columns:.8fr 1.2fr;gap:50px;align-items:end;margin-bottom:38px}
+    .section-head p{color:var(--muted);font-size:18px;max-width:720px;margin:0}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .card{
+      border:1px solid var(--line);border-radius:var(--r);background:
+      linear-gradient(150deg,rgba(255,255,255,.025),transparent 55%),var(--panel);
+      padding:26px;min-height:215px;position:relative;overflow:hidden;transition:.25s ease
+    }
+    .card:hover{transform:translateY(-5px);border-color:var(--line2);background-color:var(--panel2)}
+    .code{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--gold);font-weight:800}
+    .card h3{margin-top:18px}
+    .card p{color:var(--muted);font-size:14px;margin:11px 0 0}
+    .card .go{position:absolute;right:20px;bottom:18px;color:#64717d;font-size:20px}
+    .wide{grid-column:span 2}
+    .tier{
+      border:1px solid var(--line);border-radius:var(--r);padding:25px;background:var(--panel);
+      display:grid;grid-template-columns:145px 1fr auto;gap:24px;align-items:center;margin-bottom:12px
+    }
+    .tier .num{font-size:11px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;font-weight:800}
+    .tier p{margin:8px 0 0;color:var(--muted)}
+    .tag{border:1px solid var(--line);border-radius:999px;padding:7px 10px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+    .games{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .game{padding:19px;border:1px solid var(--line);border-radius:14px;background:var(--panel);transition:.2s ease}
+    .game:hover{transform:translateY(-3px);border-color:var(--gold)}
+    .game strong{display:block;font-size:18px}
+    .game span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+    .network{
+      border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+      padding:44px 0;display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center
+    }
+    .network p{color:var(--muted);max-width:720px;margin:10px 0 0}
+    .links-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:35px}
+    .link-card{border:1px solid var(--line);background:var(--panel);border-radius:15px;padding:22px;transition:.2s ease}
+    .link-card:hover{transform:translateY(-4px);border-color:var(--gold)}
+    .link-card small{color:var(--gold);text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+    .link-card strong{display:block;margin-top:8px;font-size:20px}
+    .link-card p{color:var(--muted);font-size:13px;margin:7px 0 0}
+    footer{padding:42px 0 55px;color:#6e7a86;font-size:12px}
+    .foot{display:flex;justify-content:space-between;gap:20px;align-items:center}
+    .reveal{opacity:0;transform:translateY(24px);transition:opacity .65s ease,transform .65s ease}
+    .reveal.on{opacity:1;transform:none}
+    @media(max-width:900px){
+      .links{display:none;position:fixed;top:70px;left:18px;right:18px;flex-direction:column;align-items:stretch;padding:12px;background:#0d1219;border:1px solid var(--line);border-radius:14px}
+      .links.open{display:flex}.menu{display:block}
+      .section-head{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}
+      .games{grid-template-columns:repeat(2,1fr)}.links-grid{grid-template-columns:1fr 1fr}
+    }
+    @media(max-width:620px){
+      section{padding:78px 0}.cards,.games,.links-grid{grid-template-columns:1fr}.wide{grid-column:auto}
+      .tier{grid-template-columns:1fr;gap:8px}.tag{justify-self:start}.network{grid-template-columns:1fr}
+      .foot{flex-direction:column;align-items:flex-start}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+      .reveal{opacity:1;transform:none}
+    }
+  </style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap navin">
+    <a class="brand" href="#home">NRE <span>EMPIRE</span></a>
+    <nav class="links" id="navlinks">
+      <a href="#about">About</a>
+      <a href="#structure">Structure</a>
+      <a href="#divisions">Divisions</a>
+      <a href="#games">Games</a>
+      <a href="#network">NRN</a>
+      <a href="#links">Links</a>
+    </nav>
+    <button class="menu" id="menuBtn" aria-expanded="false">Menu</button>
+  </div>
+</header>
+
+<main>
+<section class="hero" id="home">
+  <div class="grid"></div>
+  <div class="wrap">
+    <div class="eyebrow">New Republic Enterprises</div>
+    <h1>NRE<br><em>EMPIRE.</em></h1>
+    <p class="lede">One connected empire across games, clans, media, diplomacy, events, and future expansion. NRE is the core. The Empire is the system that lets everything grow beyond a single server or game.</p>
+    <div class="actions">
+      <a class="btn primary" href="#structure">Explore the Empire →</a>
+      <a class="btn" href="https://github.com/Willn0tBill/NRN" target="_blank" rel="noopener">Open NRN ↗</a>
+    </div>
+    <div class="hero-meta">
+      <span>Core: NRE</span><span>Multi-game</span><span>Connected organizations</span><span>Expansion focused</span>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div><div class="eyebrow">01 — About</div><h2>Built beyond one clan.</h2></div>
+      <p>The NRE Empire gives New Republic Enterprises a larger structure for expansion. Individual clans and projects can keep their own purpose while still sharing leadership, resources, identity, and long-term direction.</p>
+    </div>
+    <div class="cards">
+      <article class="card reveal"><div class="code">Core</div><h3>New Republic Enterprises</h3><p>The center of the organization and the identity that connects the wider Empire.</p></article>
+      <article class="card reveal"><div class="code">Expansion</div><h3>Game Divisions</h3><p>Dedicated branches can operate in different games without forcing every game into the same structure.</p></article>
+      <article class="card reveal"><div class="code">Network</div><h3>Shared Infrastructure</h3><p>Media, awards, diplomacy, intelligence, events, and leadership systems can support every branch.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="structure">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div><div class="eyebrow">02 — Structure</div><h2>How the Empire fits together.</h2></div>
+      <p>The Empire is organized in layers so NRE can stay centralized while giving individual divisions enough freedom to run their own communities and games.</p>
+    </div>
+    <div class="tier reveal"><div class="num">Tier 01</div><div><h3>NRE Central</h3><p>Core leadership, Empire-wide direction, standards, expansion decisions, and major coordination.</p></div><span class="tag">Central Command</span></div>
+    <div class="tier reveal"><div class="num">Tier 02</div><div><h3>Empire Divisions</h3><p>Game-specific clans, branches, colonies, and controlled groups operating under the wider NRE system.</p></div><span class="tag">Operations</span></div>
+    <div class="tier reveal"><div class="num">Tier 03</div><div><h3>Connected Networks</h3><p>NRN, IEA, alliance systems, media projects, awards, championships, and supporting organizations.</p></div><span class="tag">Infrastructure</span></div>
+  </div>
+</section>
+
+<section id="divisions">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div><div class="eyebrow">03 — Divisions</div><h2>Connected organizations.</h2></div>
+      <p>These branches serve different jobs inside or alongside the Empire. Some are clans, some are network infrastructure, and others support diplomacy, media, competition, or expansion.</p>
+    </div>
+    <div class="cards">
+      <article class="card wide reveal"><div class="code">Media / Network</div><h3>NRN — New Republic Network</h3><p>The public-facing network for games, awards, news, community coverage, and future projects. NRN includes NRNA and NRNN.</p><a class="go" href="https://github.com/Willn0tBill/NRN" target="_blank" rel="noopener">↗</a></article>
+      <article class="card reveal"><div class="code">Clan / Softbear</div><h3>SFK</h3><p>Softbear Fire Kindlers — an NRE-controlled clan connected to the Empire structure.</p></article>
+      <article class="card reveal"><div class="code">Diplomacy / Intelligence</div><h3>IEA</h3><p>International Emissary Agency — built for external relations, information, diplomacy, and specialized Empire operations.</p></article>
+      <article class="card reveal"><div class="code">Competition</div><h3>SGCS</h3><p>Softbear Games Championships — tournament and competitive-event infrastructure for supported games.</p></article>
+      <article class="card reveal"><div class="code">OpenFront</div><h3>FSC</h3><p>Full Send Clan — an OpenFront-connected clan within the wider NRE network.</p></article>
+      <article class="card reveal"><div class="code">Alliance System</div><h3>ACE</h3><p>Allied Clans Empire — a cross-game alliance framework built to connect clans and mutual support across communities.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="games">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div><div class="eyebrow">04 — Games</div><h2>Empire expansion map.</h2></div>
+      <p>NRE can operate across multiple games while keeping each game division focused on its own players, strategy, recruitment, and leadership.</p>
+    </div>
+    <div class="games">
+      <a class="game reveal" href="https://kiomet.com" target="_blank" rel="noopener"><strong>Kiomet</strong><span>Strategy / Core presence</span></a>
+      <a class="game reveal" href="https://openfront.io" target="_blank" rel="noopener"><strong>OpenFront</strong><span>Mass multiplayer strategy</span></a>
+      <a class="game reveal" href="https://mk48.io" target="_blank" rel="noopener"><strong>MK48.io</strong><span>Naval combat</span></a>
+      <a class="game reveal" href="https://mazean.com" target="_blank" rel="noopener"><strong>Mazean</strong><span>3D multiplayer FPS</span></a>
+      <a class="game reveal" href="https://netquel.com" target="_blank" rel="noopener"><strong>Netquel</strong><span>Space warfare</span></a>
+      <a class="game reveal" href="https://turnfight.com" target="_blank" rel="noopener"><strong>Turnfight</strong><span>Flight combat</span></a>
+      <a class="game reveal" href="https://voxmaxa.com" target="_blank" rel="noopener"><strong>Voxmaxa</strong><span>Voxel combat</span></a>
+      <a class="game reveal" href="https://krakax.com" target="_blank" rel="noopener"><strong>Krakax</strong><span>Physics / archery</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="network">
+  <div class="wrap">
+    <div class="network reveal">
+      <div>
+        <div class="eyebrow">05 — New Republic Network</div>
+        <h2>NRN connects the public side.</h2>
+        <p>NRN handles network-facing projects such as game directories, awards, community news, and expansion coverage. It gives the Empire a public network without turning the NRE site itself into a news site.</p>
+      </div>
+      <a class="btn primary" href="https://github.com/Willn0tBill/NRN" target="_blank" rel="noopener">Visit NRN ↗</a>
+    </div>
+  </div>
+</section>
+
+<section id="links">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div><div class="eyebrow">06 — Quick Links</div><h2>Empire access points.</h2></div>
+      <p>Direct links to the main public projects and community systems currently connected to NRE and NRN.</p>
+    </div>
+    <div class="links-grid">
+      <a class="link-card reveal" href="https://github.com/Willn0tBill/NRN" target="_blank" rel="noopener"><small>Network</small><strong>NRN Website Repository</strong><p>New Republic Network, NRNN, NRNA, games, and network information.</p></a>
+      <a class="link-card reveal" href="https://forms.gle/TmmJMEPcY7DosMvB8" target="_blank" rel="noopener"><small>NRNA</small><strong>Award Nominations</strong><p>Submit nominations for New Republic Network Awards.</p></a>
+      <a class="link-card reveal" href="https://forms.gle/MP9B57M82xgaL7oz9" target="_blank" rel="noopener"><small>NRNA</small><strong>Quarterly Voting</strong><p>Vote during the active quarterly award cycle.</p></a>
+      <a class="link-card reveal" href="https://forms.gle/QszAhjD6wSB4z4b69" target="_blank" rel="noopener"><small>NRNA</small><strong>Yearly Voting</strong><p>Vote in the annual New Republic Network Awards.</p></a>
+      <a class="link-card reveal" href="https://github.com/Willn0tBill/NRE" target="_blank" rel="noopener"><small>Source</small><strong>NRE GitHub</strong><p>The repository powering this Empire website.</p></a>
+      <a class="link-card reveal" href="#structure"><small>Empire</small><strong>Organization Structure</strong><p>Review how the central command, divisions, and connected projects fit together.</p></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div><strong style="color:var(--text)">NRE Empire</strong> · New Republic Enterprises</div>
+    <a href="#home">Back to top ↑</a>
+  </div>
+</footer>
+
+<script>
+  const menuBtn=document.getElementById('menuBtn');
+  const navlinks=document.getElementById('navlinks');
+  menuBtn.addEventListener('click',()=>{
+    const open=navlinks.classList.toggle('open');
+    menuBtn.setAttribute('aria-expanded',String(open));
+  });
+  navlinks.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
+    navlinks.classList.remove('open');menuBtn.setAttribute('aria-expanded','false');
+  }));
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>e.target.classList.toggle('on',e.isIntersecting));
+  },{threshold:.1,rootMargin:'0px 0px -7%'});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
