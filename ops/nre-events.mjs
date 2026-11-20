@@ -1,6 +1,7 @@
 import { readFileSync, appendFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expandEventProgram } from './nre-event-program.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const marker = '<!-- nre-event-operator-state:v1 -->';
@@ -169,7 +170,8 @@ function requireSnowflake(value, label) {
 
 export async function main() {
   const config = JSON.parse(readFileSync(join(dir, 'events.json'), 'utf8'));
-  const events = approvedEvents(config);
+  const recurring = JSON.parse(readFileSync(join(dir, 'event-program.json'), 'utf8'));
+  const events = approvedEvents({ events: [...config.events, ...expandEventProgram(recurring)] });
   const dryRun = process.env.DRY_RUN === 'true';
   if (!events.length) {
     console.log('No approved NRE events; no Discord operations performed.');
