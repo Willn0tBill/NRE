@@ -49,9 +49,9 @@ export function recruitmentDue(server, state, now = new Date()) {
   return !Number.isFinite(last) || now.getTime() - last >= server.recruitmentIntervalHours * 60 * 60_000;
 }
 
-export function recruitmentMessage(server, nextEvents) {
+export function recruitmentMessage(server, nextEvents, now = new Date()) {
   const upcoming = nextEvents
-    .filter(event => event.discordEventId && Date.parse(event.startAt) > Date.now())
+    .filter(event => event.discordEventId && Date.parse(event.startAt) > now.getTime())
     .sort((a, b) => a.startAt.localeCompare(b.startAt)).slice(0, 3);
   if (!upcoming.length) return null;
   const links = upcoming.map(event =>
