@@ -5,6 +5,12 @@ function assert(value, message) {
   if (!value) throw new Error(message);
 }
 
+function validTimezone(zone) {
+  if (typeof zone !== 'string' || zone.length > 80) return false;
+  try { new Intl.DateTimeFormat('en-US', { timeZone: zone }); return true; }
+  catch { return false; }
+}
+
 function zonedParts(date, timezone) {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
@@ -42,12 +48,9 @@ export function expandEventProgram(config, now = new Date()) {
   assert(config && typeof config === 'object', 'Event program must be an object');
   assert(config.enabled === true || config.enabled === false, 'Program enabled must be boolean');
   if (!config.enabled) return [];
-  assert(config.timezone === 'America/Los_Angeles', 'Unsupported event program timezone');
-  assert(Array.isArray(config.programs) && config.programs.length <= 6,
-    'Program must contain at most six weekly rules');
-
-  const current = zonedParts(now, config.timezone);
-  const localDayStart = Date.UTC(current.year, current.month - 1, current.day);
+  assert(validTimezone(config.timezone), 'Unsupported default event program timezone');
+  assert(Array.isArray(config.programs) && config.programs.length <= 30,
+    'Program must contain at most 30 weekly rules');
   const planned = [];
   const ruleNames = new Set();
 
@@ -56,6 +59,10 @@ export function expandEventProgram(config, now = new Date()) {
       'Invalid program ID');
     assert(!ruleNames.has(rule.id), 'Duplicate program ID ' + rule.id);
     ruleNames.add(rule.id);
+    const zone = rule.timezone || config.timezone;
+    assert(validTimezone(zone), 'Invalid event timezone for ' + rule.id);
+    assert(typeof rule.game === 'string' && /^[a-z0-9-]{3,32}$/.test(rule.game), 'Invalid game for ' + rule.id);
+    assert(typeof rule.region === 'string' && /^[a-z0-9-]{3,32}$/.test(rule.region), 'Invalid region for ' + rule.id);
     assert(Number.isInteger(rule.dayOfWeek) && rule.dayOfWeek >= 0 && rule.dayOfWeek <= 6,
       'Invalid dayOfWeek for ' + rule.id);
     assert(/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(rule.localStart || ''),
@@ -72,6 +79,8 @@ export function expandEventProgram(config, now = new Date()) {
       rule.location.length <= 100, 'Invalid location for ' + rule.id);
     assert(rule.approved === true || rule.approved === false, 'Explicit approved flag required');
     if (!rule.approved) continue;
+    const current = zonedParts(now, zone);
+    const localDayStart = Date.UTC(current.year, current.month - 1, current.day);
 
     for (let offset = 0; offset <= 15; offset++) {
       const date = new Date(localDayStart + offset * DAY);
@@ -84,12 +93,14 @@ export function expandEventProgram(config, now = new Date()) {
       if (dateString < rule.startOn) continue;
 
       const [hour, minute] = rule.localStart.split(':').map(Number);
-      const start = localTimeToUtc(y, m, d, hour, minute, config.timezone);
+      const start = localTimeToUtc(y, m, d, hour, minute, zone);
       const remaining = start.getTime() - now.getTime();
       if (remaining <= 15 * 60_000 || remaining > WINDOW) continue;
       planned.push({
         id: rule.id + '-' + dateString,
         name: rule.name,
+        game: rule.game,
+        region: rule.region,
         description: rule.description,
         location: rule.location,
         startAt: start.toISOString(),
@@ -99,6 +110,6 @@ export function expandEventProgram(config, now = new Date()) {
     }
   }
 
-  assert(planned.length <= 30, 'Expanded program generated too many events');
+  assert(planned.length <= 60, 'Expanded program generated too many events');
   return planned.sort((a, b) => a.startAt.localeCompare(b.startAt));
 }
