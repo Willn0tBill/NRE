@@ -24,13 +24,15 @@ Each event has a single game and a single 6–7 PM local region. The host should
 
 ## Invitation copy (for an approved server/channel only)
 
-**Kiomet:** “Kiomet players: we're organizing a regional NRE session at 6 PM local time. New players welcome. RSVP through the Discord Scheduled Event to help us plan teams. If you can host, let an organizer know.”
+Every event invitation welcomes **all Empire members**, including integrated communities and participating divisions. The event operator already includes recruitment within each game-event announcement in `#game-events`; these are optional human-host talking points, **not** permission to send extra scheduled recruitment messages.
 
-**Openfront:** “Openfront strategy session this weekend: team up, learn the basics and play with the NRE community. RSVP in the event listing so we know who is interested.”
+**Kiomet:** “Kiomet players: we're organizing a regional Empire session at 6 PM local time. New players welcome. RSVP through the Discord Scheduled Event to help us plan teams. If you can host, let an organizer know.”
 
-**Netquel:** “Netquel session at 6 PM local time. Whether you're experienced or just checking it out, join the NRE event and find a group to play with.”
+**Openfront:** “Openfront strategy session this weekend: team up, learn the basics and play with the Empire community. RSVP in the event listing so we know who is interested.”
 
-**MK48.io:** “MK48.io fleet meetup: join other NRE players for a coordinated hour of naval gameplay. RSVP to the scheduled event; we'll share the lobby details before the start.”
+**Netquel:** “Netquel session at 6 PM local time. Whether you're experienced or just checking it out, join the Empire event and find a group to play with.”
+
+**MK48.io:** “MK48.io fleet meetup: join other Empire players for a coordinated hour of naval gameplay. RSVP to the scheduled event; we'll share the lobby details before the start.”
 
 Only publish the relevant game's copy in an authorized channel with a real event link. No cold DMs, misleading scarcity, fake giveaways, member scraping, automated mass invites or ping storms.
 
