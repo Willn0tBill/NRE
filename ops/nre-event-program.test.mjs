@@ -7,14 +7,15 @@ import { approvedEvents, planActions } from './nre-events.mjs';
 const source = JSON.parse(readFileSync(new URL('./event-program.json', import.meta.url), 'utf8'));
 const now = new Date('2026-11-26T00:00:00Z');
 const expectedGames = ['kiomet', 'openfront', 'netquel'];
+const additionalLiveGame = 'mk48';
 const expectedRegions = ['asia', 'europe', 'americas'];
 
 test('each of three games has independent 6 PM regional sessions, not a combined event', () => {
   assert.equal(source.enabled, true);
-  assert.equal(source.programs.length, 9);
+  assert.equal(source.programs.length, 21);
   const events = expandEventProgram(source, now);
-  assert.equal(events.length, 18);
-  assert.equal(approvedEvents({ events }).length, 18);
+  assert.equal(events.length, 21);
+  assert.equal(approvedEvents({ events }).length, 21);
   for (const game of expectedGames) {
     for (const region of expectedRegions) {
       const matching = events.filter(e => e.game === game && e.region === region);
@@ -23,6 +24,8 @@ test('each of three games has independent 6 PM regional sessions, not a combined
       assert(matching.every(e => e.id.startsWith(game + '-' + region + '-')));
     }
   }
+  assert.equal(events.filter(e => e.game === additionalLiveGame).length, 3);
+  assert.equal(events.filter(e => ['mazean', 'turnfight', 'voxmaxa'].includes(e.game)).length, 0);
   assert(events.every(e => e.approved));
 });
 
@@ -37,8 +40,8 @@ test('all three Kiomet Friday sessions begin 6 PM in their respective zones', ()
 test('first processing pass creates upcoming events without blasting two weeks of announcements', () => {
   const events = expandEventProgram(source, now);
   const actions = planActions(events, {}, now);
-  assert.equal(actions.filter(a => a.type === 'create').length, 18);
-  assert(actions.filter(a => a.type === 'announce').length <= 9);
+  assert.equal(actions.filter(a => a.type === 'create').length, 21);
+  assert(actions.filter(a => a.type === 'announce').length <= 12);
   assert(actions.filter(a => a.type === 'announce').length > 0);
 });
 
