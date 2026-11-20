@@ -1,0 +1,33 @@
+{
+  "description": "Public, read-only service checks managed by NRE Shadow. No private endpoints or secrets.",
+  "repositories": [
+    "Willn0tBill/ProfitLands",
+    "Willn0tBill/Civora-News",
+    "Willn0tBill/Troop710",
+    "Willn0tBill/SwiftSupplyOps",
+    "Willn0tBill/WtvStudios",
+    "Willn0tBill/NRE",
+    "Willn0tBill/NRN",
+    "Willn0tBill/SwiftSupply",
+    "Willn0tBill/WilliamLi",
+    "Willn0tBill/ClientHub"
+  ],
+  "sites": [
+    {
+      "name": "Civora News",
+      "url": "https://civoranews.org/"
+    },
+    {
+      "name": "Troop 710 public website",
+      "url": "https://willn0tbill.github.io/Troop710/"
+    },
+    {
+      "name": "SwiftSupply Ops",
+      "url": "https://willn0tbill.github.io/SwiftSupplyOps/"
+    },
+    {
+      "name": "Wtv Innovations",
+      "url": "https://willn0tbill.github.io/WtvStudios/"
+    }
+  ]
+}
