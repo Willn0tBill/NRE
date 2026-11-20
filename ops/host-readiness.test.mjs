@@ -7,7 +7,7 @@ const source = JSON.parse(readFileSync(new URL('./host-readiness.json', import.m
 
 test('empty ledger is valid and never implies players or hosts', () => {
   assert.deepEqual(readinessReport(source), {
-    tracked: 0, ready: 0, needsHost: [], needsPlayers: [], readySessions: []
+    tracked: 0, ready: 0, needsHost: [], needsPlayers: [], readySessions: [], staleSessions: []
   });
 });
 
@@ -20,10 +20,11 @@ test('only confirmed hosts with two confirmed players are ready', () => {
     { game: 'kiomet', region: 'americas', hostStatus: 'confirmed',
       interestedPlayers: 3, confirmedPlayers: 2, updatedAt: '2026-11-20T00:00:00Z' },
   ];
-  const report = readinessReport({ sessions });
+  const report = readinessReport({ sessions }, new Date('2026-11-21T00:00:00Z'));
   assert.deepEqual(report.readySessions, ['kiomet:americas']);
   assert.deepEqual(report.needsHost, ['kiomet:asia']);
   assert.deepEqual(report.needsPlayers, ['kiomet:europe']);
+  assert.deepEqual(report.staleSessions, []);
 });
 
 test('rejects invented or inconsistent readiness values', () => {
@@ -32,4 +33,19 @@ test('rejects invented or inconsistent readiness values', () => {
   assert.throws(() => validateReadiness({ sessions: [base, base] }), /Duplicate/);
   assert.throws(() => validateReadiness({ sessions: [{ ...base, confirmedPlayers: 2 }] }), /Invalid confirmedPlayers/);
   assert.throws(() => validateReadiness({ sessions: [{ ...base, hostStatus: 'maybe' }] }), /Invalid host status/);
+});
+
+test('stale or future confirmations never imply a ready game', () => {
+  const sessions = [
+    { game: 'kiomet', region: 'asia', hostStatus: 'confirmed',
+      interestedPlayers: 3, confirmedPlayers: 3, updatedAt: '2026-11-01T00:00:00Z' },
+    { game: 'kiomet', region: 'europe', hostStatus: 'confirmed',
+      interestedPlayers: 3, confirmedPlayers: 3, updatedAt: '2026-12-01T00:00:00Z' },
+    { game: 'kiomet', region: 'americas', hostStatus: 'confirmed',
+      interestedPlayers: 3, confirmedPlayers: 3, updatedAt: '2026-11-20T00:00:00Z' }
+  ];
+  const report = readinessReport({ sessions }, new Date('2026-11-21T00:00:00Z'));
+  assert.equal(report.ready, 1);
+  assert.deepEqual(report.readySessions, ['kiomet:americas']);
+  assert.deepEqual(report.staleSessions, ['kiomet:asia', 'kiomet:europe']);
 });
