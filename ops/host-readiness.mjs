@@ -26,16 +26,25 @@ export function validateReadiness(data) {
   return data.sessions;
 }
 
-export function readinessReport(data) {
+export function readinessReport(data, now = new Date()) {
   const sessions = validateReadiness(data);
-  const ready = sessions.filter(s => s.hostStatus === 'confirmed' && s.confirmedPlayers >= 2);
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime()))
+    throw new Error('Invalid report timestamp');
+  // Counts are only useful while their human confirmation is recent.
+  const fresh = s => {
+    const age = now.getTime() - Date.parse(s.updatedAt);
+    return age >= 0 && age <= 7 * 24 * 60 * 60_000;
+  };
+  const ready = sessions.filter(s => fresh(s) && s.hostStatus === 'confirmed' && s.confirmedPlayers >= 2);
   return {
     tracked: sessions.length,
     ready: ready.length,
-    needsHost: sessions.filter(s => s.hostStatus !== 'confirmed').map(s => s.game + ':' + s.region),
-    needsPlayers: sessions.filter(s => s.hostStatus === 'confirmed' && s.confirmedPlayers < 2)
+    needsHost: sessions.filter(s => fresh(s) && s.hostStatus !== 'confirmed')
       .map(s => s.game + ':' + s.region),
-    readySessions: ready.map(s => s.game + ':' + s.region)
+    needsPlayers: sessions.filter(s => fresh(s) && s.hostStatus === 'confirmed' && s.confirmedPlayers < 2)
+      .map(s => s.game + ':' + s.region),
+    readySessions: ready.map(s => s.game + ':' + s.region),
+    staleSessions: sessions.filter(s => !fresh(s)).map(s => s.game + ':' + s.region)
   };
 }
 
