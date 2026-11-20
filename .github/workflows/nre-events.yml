@@ -19,6 +19,9 @@ on:
       - 'ops/event-program.json'
       - 'ops/nre-event-program.mjs'
       - 'ops/nre-event-program.test.mjs'
+      - 'ops/nre-servers.mjs'
+      - 'ops/nre-servers.test.mjs'
+      - 'ops/server-targets.json'
       - '.github/workflows/nre-events.yml'
   pull_request:
     paths:
@@ -28,6 +31,9 @@ on:
       - 'ops/event-program.json'
       - 'ops/nre-event-program.mjs'
       - 'ops/nre-event-program.test.mjs'
+      - 'ops/nre-servers.mjs'
+      - 'ops/nre-servers.test.mjs'
+      - 'ops/server-targets.json'
       - '.github/workflows/nre-events.yml'
 
 permissions:
@@ -46,7 +52,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test ops/nre-events.test.mjs ops/nre-event-program.test.mjs
+      - run: node --test ops/nre-events.test.mjs ops/nre-event-program.test.mjs ops/nre-servers.test.mjs
 
   deliver:
     if: github.event_name != 'pull_request'
