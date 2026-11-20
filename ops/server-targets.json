@@ -1,0 +1,22 @@
+{
+  "servers": [
+    {
+      "id": "nre-empire",
+      "enabled": true,
+      "guildId": "1544610643389456484",
+      "announcementChannelId": "1544872647400230912",
+      "games": [
+        "kiomet",
+        "openfront",
+        "netquel",
+        "mk48"
+      ],
+      "regions": [
+        "asia",
+        "europe",
+        "americas"
+      ]
+    }
+  ],
+  "notes": "NRE Empire game-events is the single event and recruitment announcement channel. Every event announcement invites all Empire members (including integrated communities), with no separate recruitment posts. Publishing still requires an authorized Discord bot token stored as a GitHub Actions secret; this configuration alone does not verify the bot has access."
+}

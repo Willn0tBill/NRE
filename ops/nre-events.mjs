@@ -1,6 +1,8 @@
 import { readFileSync, appendFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expandEventProgram } from './nre-event-program.mjs';
+import { enabledServers, routeEvents } from './nre-servers.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const marker = '<!-- nre-event-operator-state:v1 -->';
@@ -45,7 +47,8 @@ export function planActions(events, state = {}, now = new Date()) {
     const saved = state[event.id] || {};
     if (!saved.discordEventId) result.push({ event, type: 'create' });
     if (!saved.announced) {
-      result.push({ event, type: 'announce' });
+      // Announce near the event, not all 14 days of future events in one burst.
+      if (remaining <= 72 * 60 * 60_000) result.push({ event, type: 'announce' });
       continue;
     }
     for (const reminder of reminders) {
@@ -136,13 +139,18 @@ async function ensureScheduledEvent(event, guildId, token) {
   return created.id;
 }
 
-function messageText(event, action, guildId, eventId) {
+export function messageText(event, action, guildId, eventId) {
   const time = Math.floor(Date.parse(event.startAt) / 1000);
-  const title = action === 'announce' ? '**NRE event scheduled**' :
-    '**NRE event reminder — ' + action + '**';
+  const announcement = action === 'announce';
+  const title = announcement ? '**Empire game event — players wanted**' :
+    '**Empire game reminder — ' + action + '**';
+  const invitation = announcement
+    ? '**ALL EMPIRE MEMBERS ARE INVITED.** Whether you belong to NRE directly, an integrated division, or another participating Empire community, join us to play, meet teammates and help grow the Empire. New players are welcome. Invite friends who want to play or join the Empire; attendance and live hosting depend on available members.'
+    : '**All Empire members, including integrated communities, are welcome.** Join your teammates, play for the Empire, and invite interested players to participate.';
   return title + '\n**' + event.name + '**\n' +
     event.description + '\n**When:** <t:' + time + ':F> (<t:' + time + ':R>)\n' +
-    '**Where:** ' + event.location + '\n' +
+    '**Where:** ' + event.location + '\n\n' +
+    invitation + '\n**RSVP / event details:** ' +
     eventLink(guildId, eventId) + '\n-# ' + messageTag(event.id, action);
 }
 
@@ -169,49 +177,76 @@ function requireSnowflake(value, label) {
 
 export async function main() {
   const config = JSON.parse(readFileSync(join(dir, 'events.json'), 'utf8'));
-  const events = approvedEvents(config);
+  const recurring = JSON.parse(readFileSync(join(dir, 'event-program.json'), 'utf8'));
+  const registry = JSON.parse(readFileSync(join(dir, 'server-targets.json'), 'utf8'));
+  const now = new Date();
+  const events = approvedEvents({ events: [...config.events, ...expandEventProgram(recurring, now)] });
+  const servers = enabledServers(registry);
   const dryRun = process.env.DRY_RUN === 'true';
-  if (!events.length) {
-    console.log('No approved NRE events; no Discord operations performed.');
-    return;
-  }
+
   if (dryRun) {
-    const planned = planActions(events, {}, new Date());
-    console.log('DRY RUN — this does not inspect past deliveries or contact Discord.');
-    console.log(planned.map((action) => action.event.id + ': ' + action.type +
-      (action.label ? ' ' + action.label : '')).join('\n') || 'No upcoming actions.');
+    console.log('NRE Event Operator DRY RUN — no external messages or Discord events.');
+    console.log('Upcoming approved event occurrences: ' + events.length);
+    for (const event of events) {
+      console.log(event.id + ' | ' + event.name + ' | ' + event.startAt);
+    }
+    for (const server of servers) {
+      console.log('Routing ' + routeEvents(events, server).length + ' event(s) to ' + server.id);
+    }
+    if (!servers.length) console.log('No authorized Discord servers registered yet.');
     return;
   }
+  if (!events.length) {
+    console.log('No approved NRE events within the next 14 days; nothing delivered.');
+    return;
+  }
+  if (!servers.length) {
+    console.log('NRE Event Operator: ' + events.length +
+      ' approved future event occurrence(s), but no authorized Discord servers are configured. Published: 0.');
+    return;
+  }
+
   const ghToken = process.env.GITHUB_TOKEN;
   const botToken = process.env.NRE_DISCORD_BOT_TOKEN;
-  const guildId = process.env.NRE_DISCORD_GUILD_ID;
-  const channelId = process.env.NRE_DISCORD_ANNOUNCEMENT_CHANNEL_ID;
   const repo = process.env.GITHUB_REPOSITORY;
-  requireValid(ghToken && botToken && repo === 'Willn0tBill/NRE', 'GitHub credentials or expected repository are missing');
-  requireSnowflake(guildId, 'Guild ID');
-  requireSnowflake(channelId, 'Announcement channel ID');
+  requireValid(ghToken && repo === 'Willn0tBill/NRE', 'GitHub credentials or expected repository are missing');
+  if (!botToken) {
+    console.log('NRE Event Operator: ' + events.length + ' approved events; ' +
+      servers.length + ' configured server(s); Discord bot token is absent. Published: 0.');
+    return;
+  }
 
   const ledger = await readLedger(ghToken, repo);
-  const actions = planActions(events, ledger.state, new Date());
-  for (const action of actions) {
-    const event = action.event;
-    const saved = ledger.state[event.id] || { reminders: {} };
-    saved.reminders ||= {};
-    if (action.type === 'create') {
-      saved.discordEventId = await ensureScheduledEvent(event, guildId, botToken);
-    } else {
-      requireValid(saved.discordEventId, 'Event was not created: ' + event.id);
-      const label = action.type === 'announce' ? 'announce' : action.label;
-      await ensureMessage(event, label, guildId, channelId, saved.discordEventId, botToken);
-      if (action.type === 'announce') saved.announced = true;
-      else saved.reminders[label] = true;
+  ledger.state.guilds ||= {};
+  let deliveries = 0;
+  for (const server of servers) {
+    const guildState = ledger.state.guilds[server.guildId] ||= { events: {} };
+    guildState.events ||= {};
+    const targeted = routeEvents(events, server);
+    const actions = planActions(targeted, guildState.events, now);
+    for (const action of actions) {
+      const event = action.event;
+      const saved = guildState.events[event.id] ||= { reminders: {} };
+      saved.reminders ||= {};
+      if (action.type === 'create') {
+        saved.discordEventId = await ensureScheduledEvent(event, server.guildId, botToken);
+      } else {
+        requireValid(saved.discordEventId, 'Scheduled event is missing: ' + event.id);
+        const label = action.type === 'announce' ? 'announce' : action.label;
+        await ensureMessage(event, label, server.guildId,
+          server.announcementChannelId, saved.discordEventId, botToken);
+        if (action.type === 'announce') saved.announced = true;
+        else saved.reminders[label] = true;
+      }
+      await saveLedger(ledger, ghToken, repo);
+      deliveries++;
+      console.log(server.id + ': ' + action.type + ' ' + (action.label || '') + ' for ' + event.id);
     }
-    ledger.state[event.id] = saved;
-    await saveLedger(ledger, ghToken, repo);
-    console.log('Completed ' + action.type + ' ' + (action.label || '') + ' for ' + event.id);
+
   }
-  const summary = 'NRE Event Operator: ' + events.length + ' approved event(s), ' +
-    actions.length + ' action(s) delivered.\n';
+  const summary = 'NRE Event Operator: ' + events.length + ' approved occurrences, ' +
+    servers.length + ' authorized guild targets, ' + deliveries +
+    ' event actions. Event announcements include Empire-wide recruitment invitations; no standalone recruitment posts or mass mentions.\n';
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 }
