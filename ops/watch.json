@@ -1,16 +1,20 @@
 {
   "description": "Public, read-only service checks managed by NRE Shadow. No private endpoints or secrets.",
   "repositories": [
-    "Willn0tBill/ProfitLands",
     "Willn0tBill/Civora-News",
-    "Willn0tBill/Troop710",
-    "Willn0tBill/SwiftSupplyOps",
-    "Willn0tBill/WtvStudios",
+    "Willn0tBill/Li-s-Trees-and-Fruits",
+    "Willn0tBill/NationWars",
     "Willn0tBill/NRE",
     "Willn0tBill/NRN",
+    "Willn0tBill/PPW",
+    "Willn0tBill/ProfitLands",
     "Willn0tBill/SwiftSupply",
+    "Willn0tBill/SwiftSupplyOps",
+    "Willn0tBill/Tai-Ping-Sa-Choi-Kee",
+    "Willn0tBill/Troop710",
     "Willn0tBill/WilliamLi",
-    "Willn0tBill/ClientHub"
+    "Willn0tBill/Willn0tBill",
+    "Willn0tBill/WtvStudios"
   ],
   "sites": [
     {
