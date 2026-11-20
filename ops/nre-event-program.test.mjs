@@ -46,7 +46,8 @@ test('never schedules dates before configured first session', () => {
 
 test('Pacific time accounts for daylight-saving transitions', () => {
   assert.equal(localTimeToUtc(2027,3,6,18,0,'America/Los_Angeles').toISOString(), '2027-03-07T02:00:00.000Z');
-  assert.equal(localTimeToUtc(2027,3,13,18,0,'America/Los_Angeles').toISOString(), '2027-03-14T01:00:00.000Z');
+  assert.equal(localTimeToUtc(2027,3,13,18,0,'America/Los_Angeles').toISOString(), '2027-03-14T02:00:00.000Z');
+  assert.equal(localTimeToUtc(2027,3,20,18,0,'America/Los_Angeles').toISOString(), '2027-03-21T01:00:00.000Z');
   assert.throws(() => localTimeToUtc(2027,3,14,2,30,'America/Los_Angeles'), /Nonexistent/);
 });
 
