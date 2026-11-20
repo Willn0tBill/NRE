@@ -2,6 +2,7 @@ import { readFileSync, appendFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expandEventProgram } from './nre-event-program.mjs';
+import { enabledServers, routeEvents, recruitmentDue, recruitmentMessage } from './nre-servers.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const marker = '<!-- nre-event-operator-state:v1 -->';
@@ -168,58 +169,107 @@ function requireSnowflake(value, label) {
   requireValid(typeof value === 'string' && /^\d{15,22}$/.test(value), label + ' is missing or invalid');
 }
 
+async function ensureRecruitmentMessage(server, text, token, now = new Date()) {
+  const endpoint = '/channels/' + server.recruitmentChannelId + '/messages';
+  const history = await request(discordBase, endpoint + '?limit=100', token);
+  const prefix = 'ref:NRE-RECRUITMENT/' + server.id + '/';
+  const existing = history.find(msg => String(msg.content || '').includes(prefix) &&
+    msg.author?.bot && now.getTime() - Date.parse(msg.timestamp) < 72 * 60 * 60_000);
+  if (existing) return { id: existing.id, sentAt: existing.timestamp, wasAlreadyPosted: true };
+  const tag = prefix + now.toISOString().slice(0, 10);
+  const sent = await request(discordBase, endpoint, token, {
+    method: 'POST',
+    body: { content: text + '\n-# ' + tag, allowed_mentions: { parse: [] } }
+  });
+  requireValid(sent.id, 'Discord did not return the recruitment message ID');
+  return { id: sent.id, sentAt: sent.timestamp || now.toISOString(), wasAlreadyPosted: false };
+}
+
 export async function main() {
   const config = JSON.parse(readFileSync(join(dir, 'events.json'), 'utf8'));
   const recurring = JSON.parse(readFileSync(join(dir, 'event-program.json'), 'utf8'));
-  const events = approvedEvents({ events: [...config.events, ...expandEventProgram(recurring)] });
+  const registry = JSON.parse(readFileSync(join(dir, 'server-targets.json'), 'utf8'));
+  const now = new Date();
+  const events = approvedEvents({ events: [...config.events, ...expandEventProgram(recurring, now)] });
+  const servers = enabledServers(registry);
   const dryRun = process.env.DRY_RUN === 'true';
-  if (!events.length) {
-    console.log('No approved NRE events; no Discord operations performed.');
-    return;
-  }
+
   if (dryRun) {
-    const planned = planActions(events, {}, new Date());
-    console.log('DRY RUN — this does not inspect past deliveries or contact Discord.');
-    console.log(planned.map((action) => action.event.id + ': ' + action.type +
-      (action.label ? ' ' + action.label : '')).join('\n') || 'No upcoming actions.');
+    console.log('NRE Event Operator DRY RUN — no external messages or Discord events.');
+    console.log('Upcoming approved event occurrences: ' + events.length);
+    for (const event of events) {
+      console.log(event.id + ' | ' + event.name + ' | ' + event.startAt);
+    }
+    for (const server of servers) {
+      console.log('Routing ' + routeEvents(events, server).length + ' event(s) to ' + server.id);
+    }
+    if (!servers.length) console.log('No authorized Discord servers registered yet.');
     return;
   }
+  if (!events.length) {
+    console.log('No approved NRE events within the next 14 days; nothing delivered.');
+    return;
+  }
+  if (!servers.length) {
+    console.log('NRE Event Operator: ' + events.length +
+      ' approved future event occurrence(s), but no authorized Discord servers are configured. Published: 0.');
+    return;
+  }
+
   const ghToken = process.env.GITHUB_TOKEN;
   const botToken = process.env.NRE_DISCORD_BOT_TOKEN;
-  const guildId = process.env.NRE_DISCORD_GUILD_ID;
-  const channelId = process.env.NRE_DISCORD_ANNOUNCEMENT_CHANNEL_ID;
   const repo = process.env.GITHUB_REPOSITORY;
   requireValid(ghToken && repo === 'Willn0tBill/NRE', 'GitHub credentials or expected repository are missing');
-  if (!botToken || !guildId || !channelId) {
-    const note = 'NRE Event Operator: ' + events.length + ' approved upcoming event(s); Discord connection not configured. No events or announcements delivered. Set the bot token secret and server/channel ID variables.';
-    console.log(note);
-    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, note + '\n');
+  if (!botToken) {
+    console.log('NRE Event Operator: ' + events.length + ' approved events; ' +
+      servers.length + ' configured server(s); Discord bot token is absent. Published: 0.');
     return;
   }
-  requireSnowflake(guildId, 'Guild ID');
-  requireSnowflake(channelId, 'Announcement channel ID');
 
   const ledger = await readLedger(ghToken, repo);
-  const actions = planActions(events, ledger.state, new Date());
-  for (const action of actions) {
-    const event = action.event;
-    const saved = ledger.state[event.id] || { reminders: {} };
-    saved.reminders ||= {};
-    if (action.type === 'create') {
-      saved.discordEventId = await ensureScheduledEvent(event, guildId, botToken);
-    } else {
-      requireValid(saved.discordEventId, 'Event was not created: ' + event.id);
-      const label = action.type === 'announce' ? 'announce' : action.label;
-      await ensureMessage(event, label, guildId, channelId, saved.discordEventId, botToken);
-      if (action.type === 'announce') saved.announced = true;
-      else saved.reminders[label] = true;
+  ledger.state.guilds ||= {};
+  let deliveries = 0;
+  let invitations = 0;
+  for (const server of servers) {
+    const guildState = ledger.state.guilds[server.guildId] ||= { events: {}, lastRecruitmentAt: null };
+    guildState.events ||= {};
+    const targeted = routeEvents(events, server);
+    const actions = planActions(targeted, guildState.events, now);
+    for (const action of actions) {
+      const event = action.event;
+      const saved = guildState.events[event.id] ||= { reminders: {} };
+      saved.reminders ||= {};
+      if (action.type === 'create') {
+        saved.discordEventId = await ensureScheduledEvent(event, server.guildId, botToken);
+      } else {
+        requireValid(saved.discordEventId, 'Scheduled event is missing: ' + event.id);
+        const label = action.type === 'announce' ? 'announce' : action.label;
+        await ensureMessage(event, label, server.guildId,
+          server.announcementChannelId, saved.discordEventId, botToken);
+        if (action.type === 'announce') saved.announced = true;
+        else saved.reminders[label] = true;
+      }
+      await saveLedger(ledger, ghToken, repo);
+      deliveries++;
+      console.log(server.id + ': ' + action.type + ' ' + (action.label || '') + ' for ' + event.id);
     }
-    ledger.state[event.id] = saved;
-    await saveLedger(ledger, ghToken, repo);
-    console.log('Completed ' + action.type + ' ' + (action.label || '') + ' for ' + event.id);
+    if (recruitmentDue(server, guildState, now)) {
+      const linked = targeted.map(event => ({ ...event,
+        discordEventId: guildState.events[event.id]?.discordEventId })).filter(e => e.discordEventId);
+      const body = recruitmentMessage(server, linked, now);
+      if (body) {
+        const result = await ensureRecruitmentMessage(server, body, botToken, now);
+        guildState.lastRecruitmentAt = result.sentAt;
+        await saveLedger(ledger, ghToken, repo);
+        invitations += result.wasAlreadyPosted ? 0 : 1;
+        console.log(server.id + ': opt-in recruitment post ' +
+          (result.wasAlreadyPosted ? 'already exists' : 'sent'));
+      }
+    }
   }
-  const summary = 'NRE Event Operator: ' + events.length + ' approved event(s), ' +
-    actions.length + ' action(s) delivered.\n';
+  const summary = 'NRE Event Operator: ' + events.length + ' approved occurrences, ' +
+    servers.length + ' authorized guild targets, ' + deliveries + ' event actions, ' +
+    invitations + ' opt-in recruitment announcements. No mass mentions.\n';
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 }
