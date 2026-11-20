@@ -189,7 +189,13 @@ export async function main() {
   const guildId = process.env.NRE_DISCORD_GUILD_ID;
   const channelId = process.env.NRE_DISCORD_ANNOUNCEMENT_CHANNEL_ID;
   const repo = process.env.GITHUB_REPOSITORY;
-  requireValid(ghToken && botToken && repo === 'Willn0tBill/NRE', 'GitHub credentials or expected repository are missing');
+  requireValid(ghToken && repo === 'Willn0tBill/NRE', 'GitHub credentials or expected repository are missing');
+  if (!botToken || !guildId || !channelId) {
+    const note = 'NRE Event Operator: ' + events.length + ' approved upcoming event(s); Discord connection not configured. No events or announcements delivered. Set the bot token secret and server/channel ID variables.';
+    console.log(note);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, note + '\n');
+    return;
+  }
   requireSnowflake(guildId, 'Guild ID');
   requireSnowflake(channelId, 'Announcement channel ID');
 
