@@ -3,24 +3,13 @@
   "timezone": "America/Los_Angeles",
   "programs": [
     {
-      "id": "kiomet-friday",
-      "name": "NRE Empire — Kiomet Friday Rally",
-      "description": "An open NRE community meetup for a coordinated Kiomet match. Join the NRE Empire Discord for team organization. The game session is community-led; attendance and live hosting depend on available players.",
-      "location": "Kiomet / NRE Empire Discord",
-      "dayOfWeek": 5,
-      "localStart": "19:00",
-      "durationMinutes": 75,
-      "startOn": "2026-12-04",
-      "approved": true
-    },
-    {
-      "id": "openfront-saturday",
-      "name": "NRE Empire — Openfront Saturday Operations",
-      "description": "An open NRE community meetup to coordinate an Openfront match, welcome recruits, and practice team strategy. The game session is community-led; attendance and live hosting depend on available players.",
-      "location": "Openfront / NRE Empire Discord",
+      "id": "nre-game-night",
+      "name": "NRE Empire — Community Game Night (Kiomet + Openfront)",
+      "description": "NRE's weekly community game night. First hour: Kiomet coordination and a community match. Second hour: Openfront strategy and a community match. Members can join either or both sessions. Join the NRE Empire Discord to coordinate teams; actual game hosting depends on available members and moderators.",
+      "location": "NRE Empire Discord / Kiomet and Openfront",
       "dayOfWeek": 6,
       "localStart": "18:00",
-      "durationMinutes": 75,
+      "durationMinutes": 120,
       "startOn": "2026-12-05",
       "approved": true
     }
