@@ -1,37 +1,33 @@
-# NRE Event Operator
+# NRE Event Operator — weekly combined Game Night
 
-Independent GitHub Actions scheduler for NRE Discord events. It does not need a Windows computer online and does not replace the current NRE Bot, KC Bot or JARVIS.
+One **NRE Community Game Night** each Saturday, rather than separate Kiomet and Openfront events.
 
-## What it does
+## Approved starter calendar
 
-- Checks approved upcoming events approximately every 30 minutes (GitHub scheduled jobs are best-effort).
-- Creates an external Discord Scheduled Event within 14 days of its start.
-- Sends one announcement and separate 24-hour, 3-hour and 1-hour reminders if a check falls in the relevant time window.
-- Keeps a delivery ledger in a single GitHub issue, checks existing Discord events and the last 100 announcements to reduce duplicate posts.
-- Never sends mass mentions, moderates users, changes permissions, claims winners or starts events without explicit approval.
+- **Every Saturday, 6:00–8:00 p.m. America/Los_Angeles**, beginning December 5, 2026.
+- **6:00–7:00 p.m.:** Kiomet community rally and coordinated match.
+- **7:00–8:00 p.m.:** Openfront community strategy and coordinated match.
+- Players may attend either session or both. Live games still require available members; the automation does not play or host matches itself.
+- Both sessions share **one Discord Scheduled Event**, one event announcement and a single set of 24-hour, 3-hour and 1-hour reminders.
 
-## One-time administrator setup
+The schedule lives in `ops/event-program.json`, and `ops/nre-event-program.mjs` generates dated occurrences in Pacific time (including daylight saving changes) automatically. Special one-off events can still be defined in `ops/events.json`. Editing either event file requires a reviewed repository change.
 
-1. Use an NRE Discord bot account you control, with Manage Events in the guild plus View Channel, Read Message History and Send Messages in the announcement channel.
-2. Add the GitHub Actions repository secret NRE_DISCORD_BOT_TOKEN containing the bot token. Never commit or paste the token in chat.
-3. Add GitHub Actions repository variables NRE_DISCORD_GUILD_ID and NRE_DISCORD_ANNOUNCEMENT_CHANNEL_ID with numeric Discord IDs.
-4. Edit ops/events.json through a reviewed pull request. Include a unique event ID, name, description, location, approved=true, and ISO timestamps with time zones.
-5. Run Actions > NRE Discord Event Operator > Run workflow with dry_run=true for a preview. Once the approved event configuration is merged to main, scheduled jobs deliver actions. Check Actions logs and the automated issue ledger for results.
+## How it runs
 
-## Example (NOT an actual scheduled event)
+GitHub Actions workflow `nre-events.yml` checks twice per hour at :07 and :37 UTC (best effort, not a guaranteed to-the-minute trigger). It runs unit tests, validates the event queue, creates the next occurrence as an external Discord Scheduled Event within 14 days of its start, posts one announcement and sends reminders when due. It records completed actions in an automated GitHub issue and checks recent Discord events/messages to minimize duplicate posting. It does **not** mass ping, moderate members, invent winners, or change existing event dates automatically.
 
-{
-  "id": "community-skirmish-2026-12-05",
-  "name": "NRE Community Skirmish",
-  "description": "A friendly coordinated Kiomet match.",
-  "location": "Kiomet",
-  "startAt": "2026-12-05T19:00:00-08:00",
-  "endAt": "2026-12-05T20:00:00-08:00",
-  "approved": true
-}
+**This event delivery workflow is separate from the hourly ChatGPT NRE Shadow maintenance worker.** Combining GitHub's 30-minute runner and ChatGPT's hourly automation into one literal task is not supported. They coordinate around the same NRE repository, and Shadow can audit GitHub Actions failures.
 
-## Boundaries
+## One-time Discord authorization (required before live delivery)
 
-The operator can schedule Discord Events and announcements; it cannot personally play games or facilitate live voice chat. It uses the Discord REST API through the authorized bot token, not the currently offline Windows bot process. No actual NRE events are in the configuration yet because no dates were provided.
+1. Choose an existing NRE bot you control that is authorized to **Manage Events** in the NRE Discord server. In the announcement channel it also needs **View Channel**, **Read Message History** and **Send Messages**. Ensure it is actually a guild member.
+2. In GitHub > NRE > Settings > Secrets and variables > Actions, create **repository secret** `NRE_DISCORD_BOT_TOKEN`. Never paste this token into chat, the repository, a PR or an issue.
+3. Create **repository variables** `NRE_DISCORD_GUILD_ID` and `NRE_DISCORD_ANNOUNCEMENT_CHANNEL_ID` using the server and announcement-channel numeric IDs.
+4. Open Actions > **NRE Discord Event Operator** > Run workflow with dry_run enabled. Check its log and ensure the correct upcoming event is listed.
+5. With credentials configured and approved events on the main branch, the scheduled workflow can post automatically. Monitor Actions runs and the delivery-ledger issue for confirmation.
 
-GitHub Actions schedules can be delayed or disabled after 60 days of repository inactivity. Use Discord's built-in event notifications for additional coverage. For changed dates, update the Discord Scheduled Event and JSON together; the first version deliberately avoids modifying existing event times automatically.
+If credentials are absent, the operator reports **not connected** and does not contact Discord or fabricate success. A credential or permissions error must be fixed rather than bypassed. No actual Discord event is considered created until the API succeeds and GitHub records delivery.
+
+## Limitations
+
+This service can publish event listings and announcements but cannot replace a human match host. The Windows NRE Bot, KC Bot and JARVIS remain untouched. Scheduled Actions may be delayed or disabled after long periods of inactivity. Do not depend on these as exact-second reminders; Discord's native event notifications are an additional safeguard.
