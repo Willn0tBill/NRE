@@ -25,13 +25,8 @@ export function enabledServers(config) {
     assert(Array.isArray(s.regions) && s.regions.length > 0 &&
       s.regions.every(g => typeof g === 'string' && key.test(g)),
       'At least one allowed region is required for ' + s.id);
-    assert(typeof s.recruitmentEnabled === 'boolean', 'recruitmentEnabled is required for ' + s.id);
-    if (s.recruitmentEnabled) {
-      assert(typeof s.recruitmentChannelId === 'string' && snowflake.test(s.recruitmentChannelId),
-        'A specific opt-in recruitment channel is required for ' + s.id);
-      assert(Number.isInteger(s.recruitmentIntervalHours) && s.recruitmentIntervalHours >= 72,
-        'Recruitment interval must be at least 72 hours for ' + s.id);
-    }
+    // Recruitment is part of each game event announcement. A separate outreach
+    // channel or recurring recruitment campaign is deliberately unsupported.
   }
   return config.servers.filter(s => s.enabled);
 }
@@ -43,22 +38,3 @@ export function routeEvents(events, server) {
   });
 }
 
-export function recruitmentDue(server, state, now = new Date()) {
-  if (!server.recruitmentEnabled) return false;
-  const last = Date.parse(state?.lastRecruitmentAt || '');
-  return !Number.isFinite(last) || now.getTime() - last >= server.recruitmentIntervalHours * 60 * 60_000;
-}
-
-export function recruitmentMessage(server, nextEvents, now = new Date()) {
-  const upcoming = nextEvents
-    .filter(event => event.discordEventId && Date.parse(event.startAt) > now.getTime())
-    .sort((a, b) => a.startAt.localeCompare(b.startAt)).slice(0, 3);
-  if (!upcoming.length) return null;
-  const links = upcoming.map(event =>
-    '- **' + event.name + '** — <t:' + Math.floor(Date.parse(event.startAt) / 1000) +
-    ':F> — https://discord.com/events/' + server.guildId + '/' + event.discordEventId).join('\n');
-  return '**Looking for players — NRE community sessions**\n' +
-    'New and returning players are welcome. RSVP for a game below, join a team and invite a friend who wants to participate. ' +
-    'No prior experience required; games depend on available volunteer hosts.\n\n' + links +
-    '\n\nPrefer a different region? Ask the organizers for the right session. No mass mentions or unsolicited DMs.';
-}
