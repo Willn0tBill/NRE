@@ -2,7 +2,7 @@ import { readFileSync, appendFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expandEventProgram } from './nre-event-program.mjs';
-import { enabledServers, routeEvents, recruitmentDue, recruitmentMessage } from './nre-servers.mjs';
+import { enabledServers, routeEvents } from './nre-servers.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const marker = '<!-- nre-event-operator-state:v1 -->';
@@ -139,13 +139,18 @@ async function ensureScheduledEvent(event, guildId, token) {
   return created.id;
 }
 
-function messageText(event, action, guildId, eventId) {
+export function messageText(event, action, guildId, eventId) {
   const time = Math.floor(Date.parse(event.startAt) / 1000);
-  const title = action === 'announce' ? '**NRE event scheduled**' :
-    '**NRE event reminder — ' + action + '**';
+  const announcement = action === 'announce';
+  const title = announcement ? '**Empire game event — players wanted**' :
+    '**Empire game reminder — ' + action + '**';
+  const invitation = announcement
+    ? '**ALL EMPIRE MEMBERS ARE INVITED.** Whether you belong to NRE directly, an integrated division, or another participating Empire community, join us to play, meet teammates and help grow the Empire. New players are welcome. Invite friends who want to play or join the Empire; attendance and live hosting depend on available members.'
+    : '**All Empire members, including integrated communities, are welcome.** Join your teammates, play for the Empire, and invite interested players to participate.';
   return title + '\n**' + event.name + '**\n' +
     event.description + '\n**When:** <t:' + time + ':F> (<t:' + time + ':R>)\n' +
-    '**Where:** ' + event.location + '\n' +
+    '**Where:** ' + event.location + '\n\n' +
+    invitation + '\n**RSVP / event details:** ' +
     eventLink(guildId, eventId) + '\n-# ' + messageTag(event.id, action);
 }
 
@@ -168,22 +173,6 @@ async function ensureMessage(event, action, guildId, channelId, eventId, token) 
 
 function requireSnowflake(value, label) {
   requireValid(typeof value === 'string' && /^\d{15,22}$/.test(value), label + ' is missing or invalid');
-}
-
-async function ensureRecruitmentMessage(server, text, token, now = new Date()) {
-  const endpoint = '/channels/' + server.recruitmentChannelId + '/messages';
-  const history = await request(discordBase, endpoint + '?limit=100', token);
-  const prefix = 'ref:NRE-RECRUITMENT/' + server.id + '/';
-  const existing = history.find(msg => String(msg.content || '').includes(prefix) &&
-    msg.author?.bot && now.getTime() - Date.parse(msg.timestamp) < 72 * 60 * 60_000);
-  if (existing) return { id: existing.id, sentAt: existing.timestamp, wasAlreadyPosted: true };
-  const tag = prefix + now.toISOString().slice(0, 10);
-  const sent = await request(discordBase, endpoint, token, {
-    method: 'POST',
-    body: { content: text + '\n-# ' + tag, allowed_mentions: { parse: [] } }
-  });
-  requireValid(sent.id, 'Discord did not return the recruitment message ID');
-  return { id: sent.id, sentAt: sent.timestamp || now.toISOString(), wasAlreadyPosted: false };
 }
 
 export async function main() {
@@ -230,9 +219,8 @@ export async function main() {
   const ledger = await readLedger(ghToken, repo);
   ledger.state.guilds ||= {};
   let deliveries = 0;
-  let invitations = 0;
   for (const server of servers) {
-    const guildState = ledger.state.guilds[server.guildId] ||= { events: {}, lastRecruitmentAt: null };
+    const guildState = ledger.state.guilds[server.guildId] ||= { events: {} };
     guildState.events ||= {};
     const targeted = routeEvents(events, server);
     const actions = planActions(targeted, guildState.events, now);
@@ -254,23 +242,11 @@ export async function main() {
       deliveries++;
       console.log(server.id + ': ' + action.type + ' ' + (action.label || '') + ' for ' + event.id);
     }
-    if (recruitmentDue(server, guildState, now)) {
-      const linked = targeted.map(event => ({ ...event,
-        discordEventId: guildState.events[event.id]?.discordEventId })).filter(e => e.discordEventId);
-      const body = recruitmentMessage(server, linked, now);
-      if (body) {
-        const result = await ensureRecruitmentMessage(server, body, botToken, now);
-        guildState.lastRecruitmentAt = result.sentAt;
-        await saveLedger(ledger, ghToken, repo);
-        invitations += result.wasAlreadyPosted ? 0 : 1;
-        console.log(server.id + ': opt-in recruitment post ' +
-          (result.wasAlreadyPosted ? 'already exists' : 'sent'));
-      }
-    }
+
   }
   const summary = 'NRE Event Operator: ' + events.length + ' approved occurrences, ' +
-    servers.length + ' authorized guild targets, ' + deliveries + ' event actions, ' +
-    invitations + ' opt-in recruitment announcements. No mass mentions.\n';
+    servers.length + ' authorized guild targets, ' + deliveries +
+    ' event actions. Event announcements include Empire-wide recruitment invitations; no standalone recruitment posts or mass mentions.\n';
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 }
