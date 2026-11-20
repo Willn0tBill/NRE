@@ -211,8 +211,18 @@ export async function main() {
   const repo = process.env.GITHUB_REPOSITORY;
   requireValid(ghToken && repo === 'Willn0tBill/NRE', 'GitHub credentials or expected repository are missing');
   if (!botToken) {
-    console.log('NRE Event Operator: ' + events.length + ' approved events; ' +
-      servers.length + ' configured server(s); Discord bot token is absent. Published: 0.');
+    const blocked = 'NRE Event Operator: ' + events.length + ' approved events; ' +
+      servers.length + ' configured server(s); Discord bot token is absent. Published: 0.';
+    console.log(blocked);
+    // A green workflow means the operator ran correctly, not that Discord received events.
+    // Make the blocked state visible in the Actions run summary without exposing secrets.
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+        '### Discord delivery blocked — 0 events published\n\n' +
+        'The \`NRE_DISCORD_BOT_TOKEN\` secret is unavailable. The event operator ran successfully, ' +
+        'but no Discord API requests were made. Configure the repository Actions secret and ' +
+        'verify the bot has Manage Events and channel message permissions.\n\n');
+    }
     return;
   }
 
