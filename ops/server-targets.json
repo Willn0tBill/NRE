@@ -1,0 +1,4 @@
+{
+  "servers": [],
+  "notes": "Add only Discord servers whose administrators explicitly authorize this bot to post. Server and channel IDs are nonsecret; keep bot token in GitHub Actions secrets. Each enabled server selects games/regions and a dedicated optional recruitment channel."
+}
