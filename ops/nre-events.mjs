@@ -47,7 +47,8 @@ export function planActions(events, state = {}, now = new Date()) {
     const saved = state[event.id] || {};
     if (!saved.discordEventId) result.push({ event, type: 'create' });
     if (!saved.announced) {
-      result.push({ event, type: 'announce' });
+      // Announce near the event, not all 14 days of future events in one burst.
+      if (remaining <= 72 * 60 * 60_000) result.push({ event, type: 'announce' });
       continue;
     }
     for (const reminder of reminders) {
