@@ -20,7 +20,13 @@ export function validateReadiness(data) {
     if (!Number.isInteger(s.confirmedPlayers) || s.confirmedPlayers < 0 ||
         s.confirmedPlayers > s.interestedPlayers)
       throw new Error('Invalid confirmedPlayers for ' + id);
-    if (typeof s.updatedAt !== 'string' || !Number.isFinite(Date.parse(s.updatedAt)))
+    // Require an unambiguous UTC instant, not Date.parse's permissive local-date guesses.
+    // A bad timestamp can otherwise silently make a session appear ready.
+    if (typeof s.updatedAt !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(s.updatedAt) ||
+        !Number.isFinite(Date.parse(s.updatedAt)) ||
+        new Date(s.updatedAt).toISOString() !==
+          new Date(Date.parse(s.updatedAt)).toISOString())
       throw new Error('Invalid updatedAt for ' + id);
   }
   return data.sessions;
