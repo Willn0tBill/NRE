@@ -62,8 +62,12 @@ export function approvedSessionCoverage(readinessData, program) {
   const tracked = new Set(validateReadiness(readinessData).map(s => s.game + ':' + s.region));
   if (!program || !Array.isArray(program.programs))
     throw new Error('Approved event program required for coverage');
-  const approved = [...new Set(program.programs.filter(rule => rule.approved === true)
-    .map(rule => rule.game + ':' + rule.region))].sort();
+  const approvedRules = program.programs.filter(rule => rule?.approved === true);
+  for (const rule of approvedRules) {
+    if (!validGames.has(rule.game) || !validRegions.has(rule.region))
+      throw new Error('Invalid approved game or region');
+  }
+  const approved = [...new Set(approvedRules.map(rule => rule.game + ':' + rule.region))].sort();
   return {
     approvedSeries: approved.length,
     trackedApprovedSeries: approved.filter(id => tracked.has(id)).length,
