@@ -58,7 +58,7 @@ export function readinessReport(data, now = new Date()) {
  * Untracked means unknown, NOT zero turnout or a cancelled host.
  * Paused templates are excluded from coverage.
  */
-export function approvedSessionCoverage(readinessData, program) {
+export function approvedSessionCoverage(readinessData, program, now = new Date()) {
   const sessions = validateReadiness(readinessData);
   const tracked = new Set(sessions.map(s => s.game + ':' + s.region));
   if (!program || !Array.isArray(program.programs))
@@ -71,7 +71,8 @@ export function approvedSessionCoverage(readinessData, program) {
   const approved = [...new Set(approvedRules.map(rule => rule.game + ':' + rule.region))].sort();
   // A historical record is tracked, but it is not current evidence of a host
   // or player. Surface stale approved slots separately for reconfirmation.
-  const now = new Date();
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime()))
+    throw new Error('Invalid report timestamp');
   const stale = new Set(sessions.filter(s => {
     const age = now.getTime() - Date.parse(s.updatedAt);
     return age < 0 || age > 7 * 24 * 60 * 60_000;
