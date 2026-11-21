@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateReadiness, readinessReport } from './host-readiness.mjs';
+import { validateReadiness, readinessReport, approvedSessionCoverage } from './host-readiness.mjs';
 
 const source = JSON.parse(readFileSync(new URL('./host-readiness.json', import.meta.url), 'utf8'));
 
@@ -61,4 +61,33 @@ test('readiness rejects ambiguous local timestamps and invalid calendar dates', 
       /Invalid updatedAt/, timestamp);
   }
   assert.equal(validateReadiness({ sessions: [{ ...base, updatedAt: '2026-11-20T00:00:00.123Z' }] }).length, 1);
+});
+
+test('empty ledger flags every approved weekly series without inventing a host gap', () => {
+  const program = JSON.parse(readFileSync(new URL('./event-program.json', import.meta.url), 'utf8'));
+  const coverage = approvedSessionCoverage(source, program);
+  assert.equal(coverage.approvedSeries, 12);
+  assert.equal(coverage.trackedApprovedSeries, 0);
+  assert.equal(coverage.untrackedApprovedSeries.length, 12);
+  assert(coverage.untrackedApprovedSeries.includes('kiomet:asia'));
+  assert(!coverage.untrackedApprovedSeries.some(id => id.startsWith('mazean:')));
+  assert.deepEqual(readinessReport(source).needsHost, []);
+});
+
+test('coverage removes only actually tracked approved series and ignores paused records', () => {
+  const program = { programs: [
+    { game: 'kiomet', region: 'asia', approved: true },
+    { game: 'kiomet', region: 'europe', approved: true },
+    { game: 'mazean', region: 'asia', approved: false }
+  ] };
+  const base = { hostStatus: 'unconfirmed', interestedPlayers: 0,
+    confirmedPlayers: 0, updatedAt: '2026-11-20T00:00:00Z' };
+  const data = { sessions: [
+    { ...base, game: 'kiomet', region: 'asia' },
+    { ...base, game: 'mazean', region: 'asia' }
+  ] };
+  assert.deepEqual(approvedSessionCoverage(data, program), {
+    approvedSeries: 2, trackedApprovedSeries: 1, untrackedApprovedSeries: ['kiomet:europe']
+  });
+  assert.throws(() => approvedSessionCoverage(data, {}), /Approved event program/);
 });
