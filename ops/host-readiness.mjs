@@ -53,8 +53,28 @@ export function readinessReport(data, now = new Date()) {
   };
 }
 
+/**
+ * Report approved weekly game/region slots missing from the manual ledger.
+ * Untracked means unknown, NOT zero turnout or a cancelled host.
+ * Paused templates are excluded from coverage.
+ */
+export function approvedSessionCoverage(readinessData, program) {
+  const tracked = new Set(validateReadiness(readinessData).map(s => s.game + ':' + s.region));
+  if (!program || !Array.isArray(program.programs))
+    throw new Error('Approved event program required for coverage');
+  const approved = [...new Set(program.programs.filter(rule => rule.approved === true)
+    .map(rule => rule.game + ':' + rule.region))].sort();
+  return {
+    approvedSeries: approved.length,
+    trackedApprovedSeries: approved.filter(id => tracked.has(id)).length,
+    untrackedApprovedSeries: approved.filter(id => !tracked.has(id))
+  };
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const file = process.argv[2] || new URL('./host-readiness.json', import.meta.url);
   const report = readinessReport(JSON.parse(readFileSync(file, 'utf8')));
-  console.log(JSON.stringify(report, null, 2));
+  const program = JSON.parse(readFileSync(new URL('./event-program.json', import.meta.url), 'utf8'));
+  const coverage = approvedSessionCoverage(JSON.parse(readFileSync(file, 'utf8')), program);
+  console.log(JSON.stringify({ ...report, ...coverage }, null, 2));
 }
