@@ -28,3 +28,7 @@ Readiness expires seven days after the last verified update. The report lists ex
 ## Coverage against the actual approved schedule
 
 The CLI now compares the manual ledger with `ops/event-program.json` and reports `approvedSeries`, `trackedApprovedSeries`, and `untrackedApprovedSeries`. This prevents an empty ledger from misleadingly showing no missing hosts: untracked approved sessions are explicitly **unknown**, not confirmed empty, cancelled, or ready. The currently approved program contains twelve separate game-region series. Paused Mazean, Turnfight and Voxmaxa templates are excluded until explicitly approved. Tracking never changes the approved publishing schedule or blocks Discord delivery.
+
+## Reconfirming stale approved sessions
+
+The report's `staleApprovedSeries` lists **approved** game/region series with an existing record older than seven days or dated in the future. These are **not** counted as confirmed ready sessions. Ask the host and interested players to reconfirm, then update the record's UTC `updatedAt` only after actual confirmation. An empty list does not prove attendance, and `untrackedApprovedSeries` remains separate from stale records. Paused game templates are excluded from this approved-series metric.
