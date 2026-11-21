@@ -87,7 +87,8 @@ test('coverage removes only actually tracked approved series and ignores paused 
     { ...base, game: 'mazean', region: 'asia' }
   ] };
   assert.deepEqual(approvedSessionCoverage(data, program), {
-    approvedSeries: 2, trackedApprovedSeries: 1, untrackedApprovedSeries: ['kiomet:europe']
+    approvedSeries: 2, trackedApprovedSeries: 1, untrackedApprovedSeries: ['kiomet:europe'],
+    staleApprovedSeries: ['kiomet:asia']
   });
   assert.throws(() => approvedSessionCoverage(data, {}), /Approved event program/);
 });
@@ -109,6 +110,26 @@ test('coverage rejects malformed approved game rules instead of reporting phanto
       { game: 'kiomet', region: 'asia', approved: true },
       { game: 'kiomet', region: 'asia', approved: true }
     ] }),
-    { approvedSeries: 1, trackedApprovedSeries: 0, untrackedApprovedSeries: ['kiomet:asia'] }
+    { approvedSeries: 1, trackedApprovedSeries: 0, untrackedApprovedSeries: ['kiomet:asia'],
+      staleApprovedSeries: [] }
   );
+});
+
+test('coverage flags stale approved records for human reconfirmation without inventing attendance', () => {
+  const program = { programs: [
+    { game: 'kiomet', region: 'asia', approved: true },
+    { game: 'kiomet', region: 'europe', approved: true },
+    { game: 'mazean', region: 'asia', approved: false }
+  ] };
+  const base = { hostStatus: 'confirmed', interestedPlayers: 2, confirmedPlayers: 2 };
+  const data = { sessions: [
+    { ...base, game: 'kiomet', region: 'asia', updatedAt: '2026-11-01T00:00:00Z' },
+    { ...base, game: 'kiomet', region: 'europe', updatedAt: '2026-11-20T00:00:00Z' },
+    { ...base, game: 'mazean', region: 'asia', updatedAt: '2026-11-01T00:00:00Z' }
+  ] };
+  assert.deepEqual(approvedSessionCoverage(data, program, new Date('2026-11-21T00:00:00Z')), {
+    approvedSeries: 2, trackedApprovedSeries: 2, untrackedApprovedSeries: [],
+    staleApprovedSeries: ['kiomet:asia']
+  });
+  assert.throws(() => approvedSessionCoverage(data, program, new Date(NaN)), /Invalid report timestamp/);
 });
