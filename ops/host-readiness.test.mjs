@@ -86,7 +86,7 @@ test('coverage removes only actually tracked approved series and ignores paused 
     { ...base, game: 'kiomet', region: 'asia' },
     { ...base, game: 'mazean', region: 'asia' }
   ] };
-  assert.deepEqual(approvedSessionCoverage(data, program), {
+  assert.deepEqual(approvedSessionCoverage(data, program, new Date('2026-12-01T00:00:00Z')), {
     approvedSeries: 2, trackedApprovedSeries: 1, untrackedApprovedSeries: ['kiomet:europe'],
     staleApprovedSeries: ['kiomet:asia']
   });
