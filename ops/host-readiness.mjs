@@ -59,7 +59,8 @@ export function readinessReport(data, now = new Date()) {
  * Paused templates are excluded from coverage.
  */
 export function approvedSessionCoverage(readinessData, program) {
-  const tracked = new Set(validateReadiness(readinessData).map(s => s.game + ':' + s.region));
+  const sessions = validateReadiness(readinessData);
+  const tracked = new Set(sessions.map(s => s.game + ':' + s.region));
   if (!program || !Array.isArray(program.programs))
     throw new Error('Approved event program required for coverage');
   const approvedRules = program.programs.filter(rule => rule?.approved === true);
@@ -68,10 +69,18 @@ export function approvedSessionCoverage(readinessData, program) {
       throw new Error('Invalid approved game or region');
   }
   const approved = [...new Set(approvedRules.map(rule => rule.game + ':' + rule.region))].sort();
+  // A historical record is tracked, but it is not current evidence of a host
+  // or player. Surface stale approved slots separately for reconfirmation.
+  const now = new Date();
+  const stale = new Set(sessions.filter(s => {
+    const age = now.getTime() - Date.parse(s.updatedAt);
+    return age < 0 || age > 7 * 24 * 60 * 60_000;
+  }).map(s => s.game + ':' + s.region));
   return {
     approvedSeries: approved.length,
     trackedApprovedSeries: approved.filter(id => tracked.has(id)).length,
-    untrackedApprovedSeries: approved.filter(id => !tracked.has(id))
+    untrackedApprovedSeries: approved.filter(id => !tracked.has(id)),
+    staleApprovedSeries: approved.filter(id => stale.has(id))
   };
 }
 
