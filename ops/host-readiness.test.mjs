@@ -91,3 +91,24 @@ test('coverage removes only actually tracked approved series and ignores paused 
   });
   assert.throws(() => approvedSessionCoverage(data, {}), /Approved event program/);
 });
+
+test('coverage rejects malformed approved game rules instead of reporting phantom series', () => {
+  for (const rule of [
+    { game: 'unknown-game', region: 'asia', approved: true },
+    { game: 'kiomet', region: 'unknown-region', approved: true },
+    { region: 'asia', approved: true },
+    { game: 'kiomet', approved: true }
+  ]) {
+    assert.throws(
+      () => approvedSessionCoverage(source, { programs: [rule] }),
+      /Invalid approved game or region/
+    );
+  }
+  assert.deepEqual(
+    approvedSessionCoverage(source, { programs: [
+      { game: 'kiomet', region: 'asia', approved: true },
+      { game: 'kiomet', region: 'asia', approved: true }
+    ] }),
+    { approvedSeries: 1, trackedApprovedSeries: 0, untrackedApprovedSeries: ['kiomet:asia'] }
+  );
+});
