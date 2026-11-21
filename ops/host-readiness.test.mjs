@@ -49,3 +49,16 @@ test('stale or future confirmations never imply a ready game', () => {
   assert.deepEqual(report.readySessions, ['kiomet:americas']);
   assert.deepEqual(report.staleSessions, ['kiomet:asia', 'kiomet:europe']);
 });
+
+test('readiness rejects ambiguous local timestamps and invalid calendar dates', () => {
+  const base = { game: 'kiomet', region: 'asia', hostStatus: 'confirmed',
+    interestedPlayers: 2, confirmedPlayers: 2, updatedAt: '2026-11-20T00:00:00Z' };
+  for (const timestamp of [
+    '2026-11-20', '2026-11-20T00:00:00', '2026-11-20T00:00:00+08:00',
+    '2026-02-30T00:00:00Z', '2026-11-20T25:00:00Z'
+  ]) {
+    assert.throws(() => validateReadiness({ sessions: [{ ...base, updatedAt: timestamp }] }),
+      /Invalid updatedAt/, timestamp);
+  }
+  assert.equal(validateReadiness({ sessions: [{ ...base, updatedAt: '2026-11-20T00:00:00.123Z' }] }).length, 1);
+});
