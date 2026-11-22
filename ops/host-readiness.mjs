@@ -1,0 +1,94 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const validStatus = new Set(['unconfirmed', 'confirmed', 'cancelled']);
+const validRegions = new Set(['asia', 'europe', 'americas']);
+const validGames = new Set(['kiomet', 'openfront', 'netquel', 'mk48', 'mazean', 'turnfight', 'voxmaxa']);
+
+export function validateReadiness(data) {
+  if (!data || !Array.isArray(data.sessions)) throw new Error('sessions array required');
+  const seen = new Set();
+  for (const s of data.sessions) {
+    if (!s || typeof s !== 'object') throw new Error('Invalid session');
+    if (!validGames.has(s.game) || !validRegions.has(s.region)) throw new Error('Unknown game or region');
+    const id = s.game + ':' + s.region;
+    if (seen.has(id)) throw new Error('Duplicate session ' + id);
+    seen.add(id);
+    if (!validStatus.has(s.hostStatus)) throw new Error('Invalid host status for ' + id);
+    if (!Number.isInteger(s.interestedPlayers) || s.interestedPlayers < 0)
+      throw new Error('Invalid interestedPlayers for ' + id);
+    if (!Number.isInteger(s.confirmedPlayers) || s.confirmedPlayers < 0 ||
+        s.confirmedPlayers > s.interestedPlayers)
+      throw new Error('Invalid confirmedPlayers for ' + id);
+    // Require an unambiguous UTC instant, not Date.parse's permissive local-date guesses.
+    // A bad timestamp can otherwise silently make a session appear ready.
+    if (typeof s.updatedAt !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(s.updatedAt) ||
+        !Number.isFinite(Date.parse(s.updatedAt)) ||
+        new Date(s.updatedAt).toISOString().slice(0, 19) !== s.updatedAt.slice(0, 19))
+      throw new Error('Invalid updatedAt for ' + id);
+  }
+  return data.sessions;
+}
+
+export function readinessReport(data, now = new Date()) {
+  const sessions = validateReadiness(data);
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime()))
+    throw new Error('Invalid report timestamp');
+  // Counts are only useful while their human confirmation is recent.
+  const fresh = s => {
+    const age = now.getTime() - Date.parse(s.updatedAt);
+    return age >= 0 && age <= 7 * 24 * 60 * 60_000;
+  };
+  const ready = sessions.filter(s => fresh(s) && s.hostStatus === 'confirmed' && s.confirmedPlayers >= 2);
+  return {
+    tracked: sessions.length,
+    ready: ready.length,
+    needsHost: sessions.filter(s => fresh(s) && s.hostStatus !== 'confirmed')
+      .map(s => s.game + ':' + s.region),
+    needsPlayers: sessions.filter(s => fresh(s) && s.hostStatus === 'confirmed' && s.confirmedPlayers < 2)
+      .map(s => s.game + ':' + s.region),
+    readySessions: ready.map(s => s.game + ':' + s.region),
+    staleSessions: sessions.filter(s => !fresh(s)).map(s => s.game + ':' + s.region)
+  };
+}
+
+/**
+ * Report approved weekly game/region slots missing from the manual ledger.
+ * Untracked means unknown, NOT zero turnout or a cancelled host.
+ * Paused templates are excluded from coverage.
+ */
+export function approvedSessionCoverage(readinessData, program, now = new Date()) {
+  const sessions = validateReadiness(readinessData);
+  const tracked = new Set(sessions.map(s => s.game + ':' + s.region));
+  if (!program || !Array.isArray(program.programs))
+    throw new Error('Approved event program required for coverage');
+  const approvedRules = program.programs.filter(rule => rule?.approved === true);
+  for (const rule of approvedRules) {
+    if (!validGames.has(rule.game) || !validRegions.has(rule.region))
+      throw new Error('Invalid approved game or region');
+  }
+  const approved = [...new Set(approvedRules.map(rule => rule.game + ':' + rule.region))].sort();
+  // A historical record is tracked, but it is not current evidence of a host
+  // or player. Surface stale approved slots separately for reconfirmation.
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime()))
+    throw new Error('Invalid report timestamp');
+  const stale = new Set(sessions.filter(s => {
+    const age = now.getTime() - Date.parse(s.updatedAt);
+    return age < 0 || age > 7 * 24 * 60 * 60_000;
+  }).map(s => s.game + ':' + s.region));
+  return {
+    approvedSeries: approved.length,
+    trackedApprovedSeries: approved.filter(id => tracked.has(id)).length,
+    untrackedApprovedSeries: approved.filter(id => !tracked.has(id)),
+    staleApprovedSeries: approved.filter(id => stale.has(id))
+  };
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const file = process.argv[2] || new URL('./host-readiness.json', import.meta.url);
+  const report = readinessReport(JSON.parse(readFileSync(file, 'utf8')));
+  const program = JSON.parse(readFileSync(new URL('./event-program.json', import.meta.url), 'utf8'));
+  const coverage = approvedSessionCoverage(JSON.parse(readFileSync(file, 'utf8')), program);
+  console.log(JSON.stringify({ ...report, ...coverage }, null, 2));
+}
