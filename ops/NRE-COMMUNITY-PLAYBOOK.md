@@ -31,12 +31,14 @@ Every regional game slot has a distinct game and timezone. Use `ops/event-progra
 
 ## Regional game-specific invitations
 
-Use these as human-approved, organic announcements in designated community channels. The automatic event operator separately posts event links, at most one recruitment post per authorized server per 72 hours.
+**All Empire members are welcome**, including NRE, integrated divisions, and participating allied communities. Participation does not imply NRE owns or operates independent partner servers. These are optional host talking points, not extra automated messages.
 
-- **Kiomet:** “Playing Kiomet this Friday at 6 PM in your region? NRE is organizing a team session. New players are welcome—RSVP to the Discord event so the host can plan teams.”
-- **Openfront:** “Openfront session this Saturday at 6 PM local regional time. Join to coordinate a match, learn team strategies and meet other NRE players. RSVP if you intend to play.”
-- **Netquel:** “Netquel players: we’re organizing a Sunday 6 PM regional session. Come join a community match and help us build a consistent group. Sign up through the server event.”
-- **MK48.io:** “MK48.io fleet meetup Thursday at 6 PM local regional time. New and returning captains welcome. RSVP to the server event to help coordinate teams.”
+Use these as human-approved, organic announcements in designated community channels. The automatic event operator embeds the recruitment invitation in **every approved game-event announcement** in the authorized `#game-events` channel. There is no separate recruitment channel, independent recruitment timer, or unsolicited campaign.
+
+- **Kiomet:** “Playing Kiomet this Friday at 6 PM in your region? the Empire is organizing a team session. New players are welcome—RSVP to the Discord event so the host can plan teams.”
+- **Openfront:** “Openfront session this Saturday at 6 PM local regional time. Join to coordinate a match, learn team strategies and meet other Empire players. RSVP if you intend to play.”
+- **Netquel:** “Netquel players: we’re organizing a Sunday 6 PM regional session. Come join a community match and help us build a consistent group. Sign up through the Empire server event.”
+- **MK48.io:** “MK48.io fleet meetup Thursday at 6 PM local regional time. New and returning captains welcome. RSVP to the Empire server event to help coordinate teams.”
 
 Only use a message after the matching Discord event is actually published. Do not manufacture event URLs, imply confirmed hosts, DM strangers, or promise rewards.
 
@@ -50,7 +52,7 @@ Only use a message after the matching Discord event is actually published. Do no
 
 ## Escalation
 
-- **No authorized Discord server or token:** event publishing is blocked. Ask an administrator to authorize guild/channel IDs and store the bot token as a GitHub Actions secret; never paste credentials into chat or commits.
+- **No Discord bot token or verified permissions:** the Empire guild and `#game-events` channel IDs are configured, but event publishing remains blocked until an administrator stores the bot token as a GitHub Actions secret and confirms the bot's Manage Events and channel-message permissions. Never paste credentials into chat or commits.
 - **No host or viable players:** keep the template visible as a proposal but pause the specific session until participation is realistic. Do not replace the problem with more announcements.
 - **Operator fails:** inspect GitHub Actions logs, permissions, rate limits and delivery ledger. Do not manually resend everything without checking for duplicates.
 - **Low attendance:** adjust the game, region or frequency based on opt-in polls, rather than artificially increasing the event count.
