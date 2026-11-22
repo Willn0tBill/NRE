@@ -11,7 +11,7 @@ The user provided the following NRE Empire Discord destination:
 - **Supported games:** Kiomet, Openfront, Netquel, MK48.io
 - **Supported regions:** Asia (Shanghai), Europe (Berlin), Americas (Los Angeles)
 
-These IDs are stored in `ops/server-targets.json` on the rollout branch. The destination is configured, but **successful bot permissions and live Discord publishing have not been verified**.
+These IDs are stored in `ops/server-targets.json` on the merged `main` branch. The destination is configured, but **successful bot permissions and live Discord publishing have not been verified**.
 
 The game-events channel is intentionally the **only announcement and recruitment channel**. There is no separate recruitment channel, independent recruitment posting timer, unsolicited message campaign or cold DM system. **Each event announcement invites all Empire members**, including NRE members, integrated communities and participating divisions, to play, bring friends and help the Empire grow. Reminders also welcome all Empire members. Announcements do not use `@everyone`, `@here`, role or user pings.
 
@@ -40,12 +40,14 @@ Four approved games × three regions = **12 weekly series**. Future dates are ge
 1. Use an NRE-controlled Discord bot already present in the server and authorized to **Manage Events**.
 2. Confirm it has **View Channel**, **Read Message History**, **Send Messages** in game-events (ID `1544872647400230912`).
 3. In GitHub > `Willn0tBill/NRE` > **Settings → Secrets and variables → Actions → Secrets**, add `NRE_DISCORD_BOT_TOKEN` as a repository secret. **Never paste the token in a chat, PR, issue, file or repository commit.**
-4. Merge the reviewed event-operator rollout PR only after tests and permission setup are verified. The branch configuration is not live on `main` until merged.
+4. The event-operator rollout (PR #4) was merged to `main` on November 20, 2026. Do not re-merge old rollout branches; validate the existing deployed workflow and permissions.
 5. In GitHub Actions, manually run **NRE Discord Event Operator** with `dry_run=true` to preview the event queue. Then check an authorized real run and verify the created Discord event and announcement in the actual server.
 
 If the token, bot presence or permissions are absent, publishing is **not active**. CI passing means the code and unit tests succeeded, **not** that Discord has received an event.
 
 ## Security, inclusion and reliability
+
+**Credential configuration authority:** Only an actual NRE Discord server member with the **Administrator** permission (in Discord server settings, not merely a moderator/host/recruiter role) may authorize and perform NRE bot credential setup. The same operator must independently hold authorized GitHub repository secret-management access. Discord Administrator does not itself grant GitHub permissions and GitHub write access does not establish Discord Administrator permission; verify both before configuration. No Discord command, public website form, issue, PR, chat message or client browser should accept or reveal the bot token. The GitHub Actions secret interface cannot itself check a Discord member's permission; a server/repository administrator must enforce this two-sided review manually.
 
 Bot tokens must be stored only in GitHub Actions secrets. The operator never sends unsolicited DMs or mass mentions. Integrated communities and affiliated groups are welcome to participate; this does not imply NRE owns or controls an integration's server. Other guilds must be added with their administrator's explicit permission.
 
